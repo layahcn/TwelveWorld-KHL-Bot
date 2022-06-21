@@ -1,7 +1,9 @@
 # 开黑啦机器人SDK
-from xmlrpc.client import boolean
 from khl import Bot, Message, EventTypes, Event
 from khl.card import CardMessage, Card, Module, Element, Types
+
+# 发起网络连接
+import requests as req
 
 # 解析Html网页标签
 from bs4 import BeautifulSoup
@@ -19,15 +21,21 @@ import random
 import re
 
 # 时间戳转换
-import time
+import pytz
+import datetime
 
-# 发起网络连接
-import requests as req
-
-# 初始化机器人
+# ----------replit----------
+# import os
+# from keep_alive import keep_alive
+# token = os.environ['token']
+# ----------replit----------
+# ----------local----------
 with open('config/config.json', 'r', encoding='utf-8') as f:
     config = json.load(f)
-bot = Bot(token=config['token'])
+token = config['token']
+# ----------local----------
+bot = Bot(token)
+# 初始化机器人
 
 
 @bot.command(name='roll')
@@ -66,31 +74,41 @@ async def bl(msg: Message, str: str):
 @bot.on_event(EventTypes.JOINED_GUILD)
 async def joined_guild(b: Bot, event: Event):
     channel = await b.fetch_public_channel('8407342412718220')  # 欢迎频道id
-    number = random.randint(1, 11)
+    newuser = f'(met){event.body["user_id"]}(met)'
+    number = random.randint(1, 14)
     if number == 1:
-        welcome = f'整个嘘独王国都在低语呼唤着(met){event.body["user_id"]}(met)……'
+        welcome = f'整个嘘独王国都在低语呼唤着{newuser}……'
     if number == 2:
-        welcome = f'(met){event.body["user_id"]}(met)坐上了人间大炮！直上云霄！'
+        welcome = f'{newuser}坐上了人间大炮！直上云霄！'
     if number == 3:
-        welcome = f'(met){event.body["user_id"]}(met)非常慷慨地带着十万卡玛来了！大家鼓掌欢迎！'
+        welcome = f'{newuser}非常慷慨地带着十万卡玛来了！大家鼓掌欢迎！'
     if number == 4:
-        welcome = f'(met){event.body["user_id"]}(met)乘着龙鸟快线大驾光临！'
+        welcome = f'{newuser}乘着龙鸟快线大驾光临！'
     if number == 5:
-        welcome = f'械勒神不小心对(met){event.body["user_id"]}(met)用了个传送之术……'
+        welcome = f'械勒神不小心对{newuser}用了个传送之术……'
     if number == 6:
-        welcome = f'子曾经曰过，天上不会掉馅饼，只会掉下个(met){event.body["user_id"]}(met)！'
+        welcome = f'子曾经曰过，天上不会掉馅饼，只会掉下个{newuser}！'
     if number == 7:
-        welcome = f'嘿，(met){event.body["user_id"]}(met)，尝尝新摘下来的苹朵吧？'
+        welcome = f'嘿，{newuser}，尝尝新摘下来的苹朵吧？'
     if number == 8:
-        welcome = f'奥古之乱的大洪水把(met){event.body["user_id"]}(met)冲到这儿来了~'
+        welcome = f'奥古之乱的大洪水把{newuser}冲到这儿来了~'
     if number == 9:
-        welcome = f'一只野生的(met){event.body["user_id"]}(met)出现了！'
+        welcome = f'一只野生的{newuser}出现了！'
     if number == 10:
         # 此条作者为酸涩酱
-        welcome = f'因卡纳姆掉下来一个(met){event.body["user_id"]}(met)，贝老伯家房顶又塌了！'
+        welcome = f'Ankama的bug总是修不完，看呐，又一位玩家{newuser}掉进来世界隐秘の底了'
     if number == 11:
         # 此条作者为破翅膀
-        welcome = f'撒迪达之神撒下了一粒种子，长出了个(met){event.body["user_id"]}(met)！'
+        welcome = f'撒迪达之神撒下了一粒种子，长出了个{newuser}！'
+    if number == 12:
+        # 此条作者为小水龙Q
+        welcome = f'Ankama的bug总是修不完，看呐，又一位玩家{newuser}掉进来世界隐秘の底了'
+    if number == 13:
+        # 此条作者为小水龙Q
+        welcome = f'正在加载世界(咕隆咕隆~)---正在加载玩家{newuser}'
+    if number == 14:
+        # 此条作者为小水龙Q
+        welcome = f'{newuser}，欢迎来到bugama大型在线多人同♂好聊天室'
     await b.send(channel, welcome)
 # 事件1【JOINED_GUILD】欢迎新人
 
@@ -98,17 +116,17 @@ async def joined_guild(b: Bot, event: Event):
 @bot.task.add_interval(hours=6)
 async def checkwx():
     dateset = wxgethtml(1)
-    with open('wx.json', 'r', encoding='utf-8') as f:
+    with open('wx.txt', 'r', encoding='utf-8') as f:
         wxjson = json.load(f)
     judge = dateset in wxjson.get('datetitle')
     print(judge)
     if not judge:
         wxjson.get('datetitle').append(dateset)
-        with open('wx.json', 'w') as write_f:
+        with open('wx.txt', 'w') as write_f:
             write_f.write(json.dumps(wxjson))
         wximg = wxgethtml(2, wxtitle)
         cm = stdcard('wx', wxtitle, wxgethtml(
-            2, wxtitle, 'false'), wximg, wxdate)
+            2, wxtitle, 'true'), wximg, wxdate)
         channel = await bot.fetch_public_channel('3446958221309451')
         await bot.send(channel, cm)
 # 定时检测1【checkwx】微信最新文章
@@ -143,10 +161,10 @@ def stdcard(mode: str, title: str, link: str, img: str, date: str):
 # 函数1【stdcard】标准卡片格式一：最新资讯
 
 
-def wxgethtml(type: int, title: str = '', onlyurl: boolean = 'true'):
+def wxgethtml(type: int, title: str = '', onlyurl='false'):
     global wxtitle, wxdate
     url = f'http://weixin.sogou.com/weixin?type={type}&s_from=input&query=Wakfu%E7%9C%9F%E5%A5%BD%E7%8E%A9+{title}&ie=utf8&_sug_=n'
-    if onlyurl == 'true':
+    if onlyurl == 'false':
         header = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36'}
         html = req.get(url, headers=header)
@@ -157,7 +175,9 @@ def wxgethtml(type: int, title: str = '', onlyurl: boolean = 'true'):
             wxtitle = articletag.string
             date = int(re.findall(
                 r"\d+", str(articletag.next_element.next_element))[0])
-            wxdate = time.strftime("%Y-%m-%d %H:%M", time.localtime(date))
+            timezone = pytz.timezone('Asia/Shanghai')
+            localtime = datetime.datetime.fromtimestamp(date, timezone)
+            wxdate = localtime.strftime("%Y-%m-%d %H:%M")
             return {"date": wxdate, "title": wxtitle}
         if type == 2:
             articletag = soup.find(
@@ -171,6 +191,10 @@ def wxgethtml(type: int, title: str = '', onlyurl: boolean = 'true'):
 # 系统日志，随便写一个，那就都写吧
 logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(level='INFO')
+
+# ----------replit----------
+# keep_alive()
+# ----------replit----------
 
 # 万事俱备，机械虫出发！
 bot.run()
