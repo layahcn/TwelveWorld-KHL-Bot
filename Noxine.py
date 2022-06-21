@@ -96,7 +96,7 @@ async def joined_guild(b: Bot, event: Event):
         welcome = f'一只野生的{newuser}出现了！'
     if number == 10:
         # 此条作者为酸涩酱
-        welcome = f'Ankama的bug总是修不完，看呐，又一位玩家{newuser}掉进来世界隐秘の底了'
+        welcome = f'因卡纳姆掉下来一个{newuser}，贝老伯家房顶又塌了！'
     if number == 11:
         # 此条作者为破翅膀
         welcome = f'撒迪达之神撒下了一粒种子，长出了个{newuser}！'
