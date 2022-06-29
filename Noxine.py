@@ -71,6 +71,12 @@ async def bl(msg: Message, str: str):
 # 指令3【/bl string】b站搜索
 
 
+@bot.command(name='rep')
+async def rep(msg: Message, str: str):    
+    await msg.ctx.channel.send(str)
+# 指令4【/rep string】复读机
+
+
 @bot.on_event(EventTypes.JOINED_GUILD)
 async def joined_guild(b: Bot, event: Event):
     channel = await b.fetch_public_channel('8407342412718220')  # 欢迎频道id
