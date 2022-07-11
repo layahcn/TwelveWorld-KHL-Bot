@@ -41,7 +41,7 @@ bot = Bot(token)
 
 
 def stdcard(mode: str, title: str, link: str, img: str, date: str):
-    if mode == 'wx':
+    if mode == 'wx' or mode == 'wxs':
         btn = '搜索文章'
         avatar = 'http://wx.qlogo.cn/mmhead/Q3auHgzwzM7ZnPbIDnIibUDKyzYRAagHD1Q3lWfeq7TZRnyW4ABYiacg/0'
         author = 'Wakfu真好玩'
@@ -51,8 +51,10 @@ def stdcard(mode: str, title: str, link: str, img: str, date: str):
         btn = '阅读专栏'
         avatar = 'https://i0.hdslb.com/bfs/face/a223372898c0e37fcb6e632a5ba444c34b9ef6ec.jpg'
         author = '盐十汽水'
-        icon = 'https://img.kaiheila.cn/assets/2022-06/T5M0eIAcme06402x.png'
+        icon = 'https://img.kookapp.cn/assets/2022-07/URz3tjnkpm01c01c.png'
         media = '哔哩哔哩弹幕网'
+    if mode == 'wxs':
+      btn = '阅读文章'
     cm = CardMessage(
         Card(
             Module.Section(
@@ -83,6 +85,7 @@ def wxgethtml(type: int, title: str = '', onlyurl='false'):
             articletag = soup.find_all('a',
                                        attrs={'uigs': 'account_article_0'})[0]
             wxtitle = articletag.string
+            print(wxtitle)
             date = int(
                 re.findall(r"\d+",
                            str(articletag.next_element.next_element))[0])
@@ -100,13 +103,6 @@ def wxgethtml(type: int, title: str = '', onlyurl='false'):
 # 函数2【wxgethtml】搜狗微信获取链接
 
 
-cyresp = urq.urlopen('https://launcher.cdn.ankama.com/cytrus.json')
-cyjson = json.loads(cyresp.read())
-with open('cytrus.txt', 'r') as f:
-    cylocal = json.load(f)
-# 读取Ankama游戏最新版本页，读入本地缓存页备用
-
-
 def check(game):
     global version
     version = cyjson['games'][str(game)]['platforms']['windows']['main']
@@ -120,7 +116,7 @@ def check(game):
 
 
 @bot.command(name='roll')
-async def roll(msg: Message, t_min: int = 1, t_max: int = 100):
+async def roll(msg: Message, t_min: int = 1, t_max: int = 100):		
     result = random.randint(t_min, t_max)
     await msg.reply(str(result))
 # 指令1【/roll min max】经典roll
@@ -171,6 +167,22 @@ async def rep(msg: Message,
 # 指令4【/rep string】复读机
 
 
+@bot.command(name='szt')
+async def szt(msg: Message, str: str):  
+    if msg.author.id == '1862574775':
+        games = await bot.list_game()
+        game = next(filter(lambda g: g.name == str, games), None)
+        if game is None:
+            game = await bot.create_game(str)
+            await msg.reply(f'未在游戏列表中搜寻到{str}，已新建并设定游戏状态')
+        else:
+            await msg.reply(f'已设定游戏状态为正在玩{str}')
+        await bot.update_playing_game(game)
+    else:
+        await msg.reply('呵，你以为你是Nox大人吗？妄想设定我的游戏状态？')
+# 指令5【/szt string】设定正在玩状态
+
+
 @bot.on_event(EventTypes.JOINED_GUILD)
 async def joined_guild(b: Bot, event: Event):
     channel = await b.fetch_public_channel('8407342412718220')  # 欢迎频道id
@@ -213,7 +225,7 @@ async def joined_guild(b: Bot, event: Event):
 # 事件1【JOINED_GUILD】欢迎新人
 
 
-@bot.task.add_interval(hours=6)
+@bot.task.add_interval(hours=3)
 async def checkwx():
     dateset = wxgethtml(1)
     with open('wx.txt', 'r', encoding='utf-8') as f:
@@ -232,22 +244,58 @@ async def checkwx():
 # 定时检测1【checkwx】微信最新文章
 
 
-@bot.task.add_interval(minutes=5)
+@bot.task.add_interval(minutes=1)
 async def checkgame():
-    gamelist = ['dofus', 'krosmaga', 'wakfu', 'waven']
+    global cyjson, cylocal
+    cyresp = urq.urlopen('https://launcher.cdn.ankama.com/cytrus.json')
+    cyjson = json.loads(cyresp.read())
+    with open('cytrus.txt', 'r') as f:
+        cylocal = json.load(f)
+    # 读取Ankama游戏最新版本页，读入本地缓存页备用
+    gamelist = ['dofus', 'krosmaga', 'omg', 'wakfu', 'waven']
     if cyjson == cylocal:
-        print('same')
+        print('checkgame same')
     else:
+        cm = ''
         for item in gamelist:
             if check(item):
                 cm = f'【{item.title()}】更新{version[4:]}版本啦~'
+                print(cm)
                 break
-        channel = await bot.fetch_public_channel('8601971711684857')
-        await bot.send(channel, cm)
+        if cm == '':
+            with open('cytrus.txt', 'w') as f:
+                json.dump(cyjson, f, separators=(',', ':'))
+                # 写入json时dump去除空格
+        else:
+            channel = await bot.fetch_public_channel('8601971711684857')
+            await bot.send(channel, cm)
 # 定时检测2【checkgame】Ankama游戏版本更新
 
+
+@bot.task.add_interval(minutes=5)
+async def checkal():
+    alresp = urq.urlopen(
+        'https://launcher.cdn.ankama.com/installers/production/latest-mac.yml')
+    line = alresp.readline()
+    new = str(line)[11:-3]
+    with open('wx.txt', 'r') as f:
+        aljson = json.load(f)
+    old = aljson['Ankama-Launcher']
+    if new == old:
+        print('checkAL same')
+    else:
+        aljson['Ankama-Launcher'] = new
+        with open('wx.txt', 'w') as f:
+            json.dump(aljson, f)
+        cm = f'【Ankama Launcher】更新 {new} 版本啦~'
+        print(cm)
+        channel = await bot.fetch_public_channel('8601971711684857')
+        await bot.send(channel, cm)
+# 定时检测3【checkal】Ankama战网版本更新
+
+
 # 系统日志，随便写一个，那就都写吧
-logging.getLogger().setLevel(logging.INFO)
+# logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(level='INFO')
 
 # ----------replit----------
